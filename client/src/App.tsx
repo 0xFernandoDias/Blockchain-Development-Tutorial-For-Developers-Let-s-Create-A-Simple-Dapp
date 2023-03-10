@@ -3,10 +3,10 @@ import { Container, Row, Col, Form, Button } from "react-bootstrap"
 import { ethers } from "ethers"
 
 function App() {
-	const [greet, setGreet] = useState<string>()
-	const [balance, setBalance] = useState<string>()
-	const [depositValue, setDepositValue] = useState<string>()
-	const [greetingValue, setGreetingsValue] = useState<string>()
+	const [greet, setGreet] = useState<string>("")
+	const [balance, setBalance] = useState<string>("")
+	const [depositValue, setDepositValue] = useState<string>("")
+	const [greetingValue, setGreetingsValue] = useState<string>("")
 
 	const provider = new ethers.BrowserProvider(window.ethereum)
 	const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
@@ -113,9 +113,16 @@ function App() {
 		setGreetingsValue(e.target.value)
 	}
 
-	const handleDepositSubmit = (e: any) => {
+	const handleDepositSubmit = async (e: any) => {
 		e.preventDefault()
-		console.log(depositValue)
+		const ethValue = ethers.parseEther(depositValue)
+		const contract = await contractPromise()
+		const depositEth = await contract.deposit({ value: ethValue })
+		await depositEth.wait()
+		const balance = await provider.getBalance(contractAddress)
+		const balanceFormatted = ethers.formatEther(balance)
+		setBalance(balanceFormatted)
+		setDepositValue("")
 	}
 
 	const handleGreetingSubmit = async (e: any) => {
@@ -124,6 +131,7 @@ function App() {
 		const greetingUpdate = await contract.setGreeting(greetingValue)
 		await greetingUpdate.wait()
 		setGreet(greetingValue)
+		setGreetingsValue("")
 	}
 
 	return (
@@ -132,7 +140,7 @@ function App() {
 				<Row className="mt-5">
 					<Col>
 						<h3>{greet}</h3>
-						<p>Contract balance: {balance}</p>
+						<p>Contract balance: {balance} ETH</p>
 					</Col>
 					<Col>
 						<Form onSubmit={handleDepositSubmit}>
@@ -144,7 +152,7 @@ function App() {
 								/>
 							</Form.Group>
 							<Button variant="success" type="submit">
-								Deposit
+								Deposit ETH on this website
 							</Button>
 						</Form>
 						<Form className="mt-5" onSubmit={handleGreetingSubmit}>
@@ -152,7 +160,7 @@ function App() {
 								<Form.Control type="text" onChange={handleGreetingChange} />
 							</Form.Group>
 							<Button variant="dark" type="submit">
-								Change
+								Change the greeting
 							</Button>
 						</Form>
 					</Col>
